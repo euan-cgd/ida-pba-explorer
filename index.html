@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IDA Allocation Formula Explorer</title>
+  <link rel="stylesheet" href="https://use.typekit.net/ymp6ujv.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="tabs" role="tablist" aria-label="Explorer sections">
+    <button class="tab" role="tab" id="tab-formula" aria-controls="panel-formula" aria-selected="true">Change the formula</button>
+    <button class="tab" role="tab" id="tab-country" aria-controls="panel-country" aria-selected="false" tabindex="-1">Change a country's data</button>
+  </div>
+
+  <!-- ============================== TAB 1 ============================== -->
+  <section role="tabpanel" id="panel-formula" aria-labelledby="tab-formula" tabindex="0">
+    <p class="lede">IDA's performance-based allocation (PBA) shares the IDA envelope across countries using
+      <em>CPR</em><sup id="sup-cpr">3</sup> &times; <em>GNI per capita</em><sup id="sup-gni">&minus;0.125</sup> &times; <em>population</em>,
+      plus a base allocation per country and FCV allocations. Adjust the formula to see who gains and loses compared with the FY25 formula,
+      holding the total envelope and FCV allocations fixed.</p>
+
+    <div class="controls" id="formula-controls">
+      <div class="control">
+        <label for="exp-gni">GNI per capita exponent <span class="value" id="exp-gni-val"></span></label>
+        <input type="range" id="exp-gni" min="-1" max="-0.125" step="0.025" value="-0.125" aria-describedby="exp-gni-hint">
+        <div class="hint" id="exp-gni-hint">More negative = more towards poorer countries. FY25: &minus;0.125</div>
+      </div>
+      <div class="control">
+        <label for="exp-cpr">CPR exponent <span class="value" id="exp-cpr-val"></span></label>
+        <input type="range" id="exp-cpr" min="1" max="4" step="0.1" value="3" aria-describedby="exp-cpr-hint">
+        <div class="hint" id="exp-cpr-hint">Higher = more weight on performance rating. FY25: 3</div>
+      </div>
+      <div class="control">
+        <label for="base">Base allocation per country <span class="value" id="base-val"></span></label>
+        <input type="range" id="base" min="0" max="50" step="1" value="15" aria-describedby="base-hint">
+        <div class="hint" id="base-hint">SDR million per year. FY25: 15</div>
+      </div>
+      <div class="control">
+        <label for="cutoff">GNI per capita cutoff <span class="value" id="cutoff-val"></span></label>
+        <input type="range" id="cutoff" min="1000" max="12000" step="250" value="4000" disabled aria-describedby="cutoff-hint">
+        <label class="check"><input type="checkbox" id="cutoff-on"> Apply a cutoff</label>
+        <div class="hint" id="cutoff-hint">Countries at or above this receive no allocation (including base and FCV). FY25: none</div>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button type="button" class="btn" id="reset">Reset to FY25 formula</button>
+      <div class="control" id="povline-wrap" hidden>
+        <label for="povline" class="visually-hidden">Poverty line</label>
+        <select id="povline"></select>
+      </div>
+    </div>
+
+    <div class="stats" aria-live="polite" id="stats"></div>
+
+    <h2>Who gains and who loses</h2>
+    <div class="toolbar">
+      <div><span class="label" id="xaxis-label">Compare against</span>
+        <span class="segmented" role="group" aria-labelledby="xaxis-label" id="xaxis">
+          <button type="button" data-v="gnipc" aria-pressed="true">GNI per capita</button>
+          <button type="button" data-v="cpr" aria-pressed="false">CPR</button>
+          <button type="button" data-v="pov" aria-pressed="false">Poverty rate</button>
+        </span>
+      </div>
+      <div><span class="label" id="metric-label">Show change as</span>
+        <span class="segmented" role="group" aria-labelledby="metric-label" id="metric">
+          <button type="button" data-v="pct" aria-pressed="true">%</button>
+          <button type="button" data-v="abs" aria-pressed="false">SDR m</button>
+        </span>
+      </div>
+    </div>
+    <div class="legend-inline" aria-hidden="true">
+      <span style="--c: var(--cgd-light-teal)">Gains</span>
+      <span style="--c: var(--cgd-gold)">Loses</span>
+      <span style="--c: var(--cgd-teal-gray)">Excluded by cutoff</span>
+    </div>
+    <div class="axis-label" id="scatter-ylabel" aria-hidden="true">Change in allocation (%)</div>
+    <div class="chart-box"><canvas id="scatter" role="img" aria-label="Scatter chart of each country's change in allocation. The full figures are in the table below."></canvas></div>
+    <p class="note">Change compared with the FY25 formula. Hover or tap a point for details. Each point is a country.</p>
+
+    <h2>Biggest gainers and losers</h2>
+    <div class="chart-box tall"><canvas id="movers" role="img" aria-label="Bar chart of the ten countries that gain most and the ten that lose most. The full figures are in the table below."></canvas></div>
+
+    <h2>How well does the allocation track poverty?</h2>
+    <p class="lede">Correlation (Pearson) between allocation per person and the share of people living below <span class="povline-text">$3</span> a day,
+      across all <span id="n-countries"></span> countries. Higher means allocations per person are more concentrated where poverty rates are high.</p>
+    <div class="axis-label" aria-hidden="true">Correlation with poverty rate</div>
+    <div class="chart-box short"><canvas id="corr" role="img" aria-label="Bar chart comparing poverty correlations under the FY25 formula and your settings. Values are in the table below."></canvas></div>
+    <table class="corr-table" id="corr-table">
+      <caption class="visually-hidden">Correlation of allocation per person with poverty rate</caption>
+      <thead><tr><th scope="col">Allocation measure</th><th scope="col">FY25 formula</th><th scope="col">Your settings</th><th scope="col">Change</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="note">"Formula only" is the performance-based portion; "+ base" adds the base allocation; "+ FCV" adds FCV allocations. Countries excluded by a cutoff count as zero.
+      Poverty rates are World Bank PIP <span id="pov-year"></span> nowcasts (2021 PPP), which for some countries extrapolate from old surveys.</p>
+
+    <h2>All countries</h2>
+    <div class="row-actions" style="margin: 0 0 0.75rem">
+      <button type="button" class="btn" id="download">Download results (CSV)</button>
+    </div>
+    <div class="table-scroll">
+      <table id="country-table">
+        <caption class="visually-hidden">Allocation by country under the FY25 formula and your settings, SDR million</caption>
+        <thead><tr></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note">SDR million. FY25 allocations are as modelled from the published FY25 inputs and match the published allocations to within rounding.
+      <span id="imputed-note"></span> Excludes Eritrea and Zimbabwe (non-accrual), Syria (no data) and Myanmar (ad hoc adjustment). Pakistan is capped at 6.88% of the total.</p>
+  </section>
+
+  <!-- ============================== TAB 2 ============================== -->
+  <section role="tabpanel" id="panel-country" aria-labelledby="tab-country" tabindex="0" hidden>
+    <p class="lede">Change one country's GNI per capita or CPR to see how its allocation responds, and what change in the other variable would have the same effect.</p>
+
+    <div class="controls">
+      <div class="control">
+        <label for="country">Country</label>
+        <select id="country"></select>
+        <div class="hint" id="country-facts"></div>
+      </div>
+      <div class="control">
+        <fieldset>
+          <legend>What to change</legend>
+          <label class="check"><input type="radio" name="mode" value="gni" checked> GNI per capita (multiply)</label>
+          <label class="check"><input type="radio" name="mode" value="cpr"> CPR (add)</label>
+        </fieldset>
+      </div>
+      <div class="control" id="gni-ctrl">
+        <label for="gni-factor">GNI per capita &times; <span class="value" id="gni-factor-val"></span></label>
+        <input type="range" id="gni-factor" min="-2" max="2" step="0.02" value="0.14" aria-describedby="gni-factor-hint">
+        <div class="hint" id="gni-factor-hint">From one-quarter to four times its current level</div>
+      </div>
+      <div class="control" id="cpr-ctrl" hidden>
+        <label for="cpr-delta">CPR change <span class="value" id="cpr-delta-val"></span></label>
+        <input type="range" id="cpr-delta" min="-1.5" max="1.5" step="0.01" value="0.1" aria-describedby="cpr-delta-hint">
+        <div class="hint" id="cpr-delta-hint">CPR is scored from 1 to 6</div>
+      </div>
+      <div class="control">
+        <fieldset>
+          <legend>Formula</legend>
+          <label class="check"><input type="radio" name="basis" value="fy25" checked> FY25 formula</label>
+          <label class="check"><input type="radio" name="basis" value="mine"> My settings from "Change the formula"</label>
+        </fieldset>
+        <div class="hint" id="basis-hint"></div>
+      </div>
+    </div>
+
+    <div class="result" id="result" aria-live="polite"></div>
+
+    <h2>Equivalent changes in GNI per capita and CPR</h2>
+    <p class="lede">Each point on the line has the same effect on <span class="country-name"></span>'s allocation: the GNI per capita change on the horizontal axis
+      and the CPR change on the vertical axis. The marker shows your current choice.</p>
+    <div class="axis-label" aria-hidden="true">Equivalent CPR change</div>
+    <div class="chart-box"><canvas id="equiv" role="img" aria-label="Line chart showing the CPR change equivalent to each GNI per capita multiplier for the selected country."></canvas></div>
+    <p class="note">Two changes have the same effect when they give the country the same raw score (CPR<sup class="c-exp">3</sup> &times; GNI per capita<sup class="g-exp">&minus;0.125</sup>), because nothing else in the formula changes.
+      So the equivalent CPR change is CPR &times; (multiplier<sup>GNI exponent / CPR exponent</sup> &minus; 1). This does not hold if the GNI change moves the country across a cutoff.</p>
+  </section>
+
+</div>
+
+<script>window.CGD_INTERACTIVE_NAME = 'ida-pba-explorer';</script>
+<script src="tracking.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+        integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4"
+        crossorigin="anonymous"></script>
+<script src="js/model.js"></script>
+<script src="js/app.js"></script>
+
+<!-- CGD iframe resize (embed side) -->
+<script>
+(function () {
+  var PARENT_ORIGIN = 'https://www.cgdev.org';
+  var lastHeight = -1;
+
+  function measure() {
+    return Math.ceil(document.body.getBoundingClientRect().height);
+  }
+
+  function report() {
+    var height = measure();
+    if (height <= 0 || height === lastHeight) return;
+    lastHeight = height;
+    window.parent.postMessage({ type: 'cgd-iframe-resize', height: height }, PARENT_ORIGIN);
+  }
+
+  window.addEventListener('load', report);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(report);
+  }
+
+  if (window.ResizeObserver) {
+    new ResizeObserver(report).observe(document.body);
+  } else {
+    window.addEventListener('resize', report);
+  }
+})();
+</script>
+</body>
+</html>
