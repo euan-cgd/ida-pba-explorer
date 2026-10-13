@@ -6,9 +6,15 @@
   <title>IDA Allocation Formula Explorer</title>
   <link rel="stylesheet" href="https://use.typekit.net/ymp6ujv.css">
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Opened directly rather than embedded in an iframe: show the draft banner and page spacing
+    if (window.self === window.top) document.documentElement.classList.add('standalone');
+  </script>
 </head>
 <body>
 <div class="wrap">
+  <p class="standalone-banner"><strong>Draft prototype for feedback.</strong> Not for circulation.
+    Figures are modelled from IDA FY25 inputs, in SDR million.</p>
 
   <div class="tabs" role="tablist" aria-label="Explorer sections">
     <button class="tab" role="tab" id="tab-formula" aria-controls="panel-formula" aria-selected="true">Change the formula</button>

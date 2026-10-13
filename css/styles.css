@@ -218,3 +218,17 @@ td.muted { color: var(--cgd-teal-gray); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---- Standalone view (opened directly, not embedded) ---- */
+.standalone-banner { display: none; }
+.standalone body { background: #fff; }
+.standalone .wrap { padding: 0.75rem 16px 1.5rem; max-width: 1200px; margin: 0 auto; }
+.standalone .standalone-banner {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--cgd-teal-black);
+  background: var(--cgd-light-gold);
+  border-left: 4px solid var(--cgd-gold);
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
