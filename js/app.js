@@ -30,7 +30,10 @@
     povLine: null, xAxis: 'gnipc', metric: 'pct',
     sort: { key: 'pct', dir: 'desc' }
   };
-  const tab2 = { index: 0, mode: 'gni', gniLog2: 0.14, cprDelta: 0.1, basis: 'fy25' };
+  // GNI per capita multiplier slider: 0-1000 mapped on a log scale from GNI_MIN to GNI_MAX
+  const GNI_MIN = 0.25, GNI_MAX = 10;
+  const sliderToFactor = v => GNI_MIN * Math.pow(GNI_MAX / GNI_MIN, v / 1000);
+  const tab2 = { index: 0, mode: 'gni', gniFactor: sliderToFactor(402), cprDelta: 0.1, basis: 'fy25' };
 
   function params() {
     return {
@@ -466,8 +469,8 @@
     }));
 
     const g = $('gni-factor');
-    g.addEventListener('input', () => { tab2.gniLog2 = +g.value; updateCountry(); });
-    g.addEventListener('change', () => T.trackEngagement('filter', 'gni_multiplier_slider', Math.pow(2, tab2.gniLog2).toFixed(2)));
+    g.addEventListener('input', () => { tab2.gniFactor = sliderToFactor(+g.value); updateCountry(); });
+    g.addEventListener('change', () => T.trackEngagement('filter', 'gni_multiplier_slider', tab2.gniFactor.toFixed(2)));
     const d = $('cpr-delta');
     d.addEventListener('input', () => { tab2.cprDelta = +d.value; updateCountry(); });
     d.addEventListener('change', () => T.trackEngagement('filter', 'cpr_change_slider', tab2.cprDelta.toFixed(2)));
@@ -486,7 +489,7 @@
     tab2.cprDelta = Math.min(Math.max(tab2.cprDelta, +d.min), +d.max);
     d.value = tab2.cprDelta;
 
-    const factor = Math.pow(2, tab2.gniLog2);
+    const factor = tab2.gniFactor;
     $('gni-factor-val').textContent = factor.toFixed(2) + ` (${fmtSigned((factor - 1) * 100, 0)}%)`;
     $('cpr-delta-val').textContent = fmtSigned(tab2.cprDelta, 2);
 
@@ -563,8 +566,8 @@
 
   function updateEquivChart(c, p) {
     const curve = [];
-    for (let v = -2; v <= 2.0001; v += 0.05) {
-      const f = Math.pow(2, v);
+    for (let k = 0; k <= 120; k++) {
+      const f = GNI_MIN * Math.pow(GNI_MAX / GNI_MIN, k / 120);
       curve.push({ x: f, y: M.cprEquivalentOfGni(c.cpr, f, p) });
     }
     const point = equiv_point && equiv_point.y != null && isFinite(equiv_point.x) ? [equiv_point] : [];
@@ -582,9 +585,10 @@
           maintainAspectRatio: false,
           scales: {
             x: {
-              type: 'logarithmic', min: 0.25, max: 4,
+              type: 'logarithmic', min: GNI_MIN, max: GNI_MAX,
               title: { display: true, text: 'GNI per capita multiplier (log scale)', color: COLORS.teal },
-              ticks: { callback: v => [0.25, 0.5, 1, 2, 4].includes(+v.toFixed(2)) ? '×' + v : '' },
+              afterBuildTicks: axis => { axis.ticks = [0.25, 0.5, 1, 2, 5, 10].map(value => ({ value })); },
+              ticks: { callback: v => '×' + v },
               grid: { color: ctx => ctx.tick.value === 1 ? COLORS.tealBlack : COLORS.lightGray },
               border: { display: false }
             },
