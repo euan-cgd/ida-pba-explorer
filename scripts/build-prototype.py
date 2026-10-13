@@ -45,6 +45,10 @@ banner = ('<p class="proto-banner"><strong>Draft prototype for feedback.</strong
 
 body = body.replace('<div class="wrap">', '<div class="wrap">\n  ' + banner, 1)
 
+# The prototype host serves files by path and republishes them together,
+# so drop the cache-busting version stamps
+body = re.sub(r'\?v=[\w-]+"', '"', body)
+
 page = "\n".join([title, fonts, '<link rel="stylesheet" href="css/styles.css">', overrides, body.strip()]) + "\n"
 
 if OUT.exists():

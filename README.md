@@ -88,6 +88,14 @@ python -m http.server 8765
 
 Then open http://localhost:8765. A server is needed because the page fetches `data/pba.json`.
 
+**Before committing any change to the page's files** (CSS, JS or data), run:
+
+```
+python scripts/bump-version.py
+```
+
+This stamps a new `?v=` version on the page's own files. GitHub Pages lets browsers cache files for 10 minutes. Without a new stamp, a visitor can get a new `index.html` with an old cached script, and new controls then do nothing.
+
 ## Hosting
 
 The repo is currently under `euan-cgd` for development. For embedding on cgdev.org it needs to move to the `center-for-global-development` GitHub organisation. The cgdev.org iframe-resize listener only accepts that GitHub Pages origin, so resizing won't work from a personal `github.io` address. Analytics events are accepted from any `*.github.io` origin.

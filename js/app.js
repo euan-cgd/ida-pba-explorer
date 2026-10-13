@@ -3,6 +3,8 @@
 (() => {
   const M = window.PBAModel;
   const T = window.CGDTracking;
+  // Cache-busting version stamped on this script's URL by scripts/bump-version.py
+  const VERSION = document.currentScript && new URL(document.currentScript.src).searchParams.get('v');
 
   const COLORS = {
     teal: '#0B4C5B', lightTeal: '#006970', gold: '#FFB52C', tealGray: '#85A5AD',
@@ -49,7 +51,7 @@
 
   // ------------------------------------------------------------------ setup
 
-  fetch('data/pba.json')
+  fetch('data/pba.json' + (VERSION ? '?v=' + VERSION : ''))
     .then(r => r.json())
     .then(init)
     .catch(err => {
