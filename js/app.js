@@ -30,10 +30,11 @@
     povLine: null, xAxis: 'gnipc', metric: 'pct',
     sort: { key: 'pct', dir: 'desc' }
   };
-  // GNI per capita multiplier slider: 0-1000 mapped on a log scale from GNI_MIN to GNI_MAX
+  // GNI per capita multiplier slider: factor = 10^(v/500), so v = 0 is exactly x1,
+  // v = 500 is x10 and v = -301 is x0.25
   const GNI_MIN = 0.25, GNI_MAX = 10;
-  const sliderToFactor = v => GNI_MIN * Math.pow(GNI_MAX / GNI_MIN, v / 1000);
-  const tab2 = { index: 0, mode: 'gni', gniFactor: sliderToFactor(402), cprDelta: 0.1, basis: 'fy25' };
+  const sliderToFactor = v => Math.pow(10, v / 500);
+  const tab2 = { index: 0, mode: 'gni', gniFactor: sliderToFactor(21), cprDelta: 0.1, basis: 'fy25' };
 
   function params() {
     return {
@@ -471,6 +472,14 @@
     const g = $('gni-factor');
     g.addEventListener('input', () => { tab2.gniFactor = sliderToFactor(+g.value); updateCountry(); });
     g.addEventListener('change', () => T.trackEngagement('filter', 'gni_multiplier_slider', tab2.gniFactor.toFixed(2)));
+    $('reset-country').addEventListener('click', () => {
+      tab2.gniFactor = 1;
+      tab2.cprDelta = 0;
+      g.value = 0;
+      updateCountry();
+      T.trackEngagement('preset', 'reset_country_change');
+    });
+
     const d = $('cpr-delta');
     d.addEventListener('input', () => { tab2.cprDelta = +d.value; updateCountry(); });
     d.addEventListener('change', () => T.trackEngagement('filter', 'cpr_change_slider', tab2.cprDelta.toFixed(2)));

@@ -136,7 +136,7 @@
       </div>
       <div class="control" id="gni-ctrl">
         <label for="gni-factor">GNI per capita &times; <span class="value" id="gni-factor-val"></span></label>
-        <input type="range" id="gni-factor" min="0" max="1000" step="1" value="402" aria-describedby="gni-factor-hint">
+        <input type="range" id="gni-factor" min="-301" max="500" step="1" value="21" aria-describedby="gni-factor-hint">
         <div class="hint" id="gni-factor-hint">From one-quarter to ten times its current level</div>
       </div>
       <div class="control" id="cpr-ctrl" hidden>
@@ -152,6 +152,9 @@
         </fieldset>
         <div class="hint" id="basis-hint"></div>
       </div>
+    </div>
+    <div class="row-actions">
+      <button type="button" class="btn" id="reset-country">Reset to no change</button>
     </div>
 
     <div class="result" id="result" aria-live="polite"></div>
