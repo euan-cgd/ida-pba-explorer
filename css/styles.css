@@ -232,3 +232,6 @@ td.muted { color: var(--cgd-teal-gray); }
   padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;
 }
+
+/* Let the short correlation table wrap at narrow widths instead of overflowing */
+.corr-table th, .corr-table td { white-space: normal; padding: 0.4rem 0.4rem; }
